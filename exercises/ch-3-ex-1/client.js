@@ -100,11 +100,30 @@ app.get('/callback', function(req, res) {
 });
 
 app.get('/fetch_resource', function(req, res) {
-
   /*
    * Use the access token to call the resource server
    */
+  console.log('Making request with access token %s', access_token);
+  var headers = {
+    'Authorization': 'Bearer ' + access_token,
+    'Content-Type': 'application/x-www-form-urlencoded'
+  };
 
+  var resource = request('POST', protectedResource,
+    { headers: headers }
+  );
+
+  if (resource.statusCode >= 200 && resource.statusCode < 300) {
+    var body = JSON.parse(resource.getBody());
+    res.render('data', { resource: body });
+    return;
+  } else {
+    /*
+     * Instead of always returning an error like we do here, refresh the access token if we have a refresh token
+     */
+    console.log("resource status error code " + resource.statusCode);
+    res.render('error', { error: 'Unable to fetch resource. Status ' + resource.statusCode });
+  }
 });
 
 var buildUrl = function(base, options, hash) {
