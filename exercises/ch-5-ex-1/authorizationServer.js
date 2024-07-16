@@ -70,11 +70,47 @@ app.get("/authorize", function(req, res) {
 });
 
 app.post('/approve', function(req, res) {
-
   /*
    * Process the results of the approval page, authorize the client
    */
-
+	var reqid = req.body.reqid;
+	var query = requests[reqid];
+	delete requests[reqid];
+	if (!query) {
+		// there was no matching saved request, this is an error
+		res.render('error', {error: 'No matching authorization request'});
+		return;
+	}
+	if (req.body.approve) {
+		if (query.response_type == 'code') {
+			// user approved access
+			var code = randomstring.generate(8);
+			
+			// save the code and request for later
+			codes[code] = { request: query };
+		
+			var urlParsed = buildUrl(query.redirect_uri, {
+				code: code,
+				state: query.state
+			});
+			res.redirect(urlParsed);
+			return;
+		} else {
+			// we got a response type we don't understand
+			var urlParsed = buildUrl(query.redirect_uri, {
+				error: 'unsupported_response_type'
+			});
+			res.redirect(urlParsed);
+			return;
+		}
+	} else {
+		// user denied access
+		var urlParsed = buildUrl(query.redirect_uri, {
+			error: 'access_denied'
+		});
+		res.redirect(urlParsed);
+		return;
+	}
 });
 
 app.post("/token", function(req, res) {
