@@ -150,6 +150,40 @@ app.post("/token", function(req, res) {
 		res.status(401).json({error: 'invalid_client'});
 		return;
 	}
+	
+	if (req.body.grant_type == 'authorization_code') {
+		var code = codes[req.body.code];
+		if (code) {
+			delete codes[req.body.code]; // burn our code, it's been used
+			if (code.request.client_id == clientId) {
+				var access_token = randomstring.generate();
+				nosql.insert({ access_token: access_token, client_id: clientId });
+
+				/*
+				 * Issue a refresh token along side the access token and save it to the database
+				 */
+				console.log('Issuing access token %s', access_token);
+				console.log('with scope %s', code.scope);
+
+				var token_response = { access_token: access_token, token_type: 'Bearer' };
+
+				res.status(200).json(token_response);
+				console.log('Issued tokens for code %s', req.body.code);
+				return;
+			} else {
+				console.log('Client mismatch, expected %s got %s', code.request.client_id, clientId);
+				res.status(400).json({error: 'invalid_grant'});
+				return;
+			}
+		} else {
+			console.log('Unknown code, %s', req.body.code);
+			res.status(400).json({error: 'invalid_grant'});
+			return;
+		}
+	} else {
+		console.log('Unknown grant type %s', req.body.grant_type);
+		res.status(400).json({error: 'unsupported_grant_type'});
+	}
 });
 
 var buildUrl = function(base, options, hash) {
