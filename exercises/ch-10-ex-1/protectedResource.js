@@ -63,7 +63,6 @@ var getAccessToken = function(req, res, next) {
   }
 
   console.log('Incoming token: %s', inToken);
-  /*
   nosql.one().make(function(builder) {
     builder.where('access_token', inToken);
     builder.callback(function(err, token) {
@@ -77,7 +76,6 @@ var getAccessToken = function(req, res, next) {
       return;
     });
   });
-  */
   /*
   //var signatureValid = jose.jws.JWS.verify(inToken, Buffer.from(sharedTokenSecret).toString('hex'), ['HS256']);
   var pubKey = jose.KEYUTIL.getKey(rsaKey);
